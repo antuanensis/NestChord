@@ -1,0 +1,98 @@
+name: NestChord
+options:
+  bundleIdPrefix: com.nestchord
+  deploymentTarget:
+    iOS: "17.0"
+    macOS: "14.0"
+packages:
+  NestChord:
+    path: .
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+targets:
+  NestChordMacDebug:
+    type: application
+    platform: macOS
+    sources:
+      - App/NestChordMacDebug
+    dependencies:
+      - package: NestChord
+        product: PluginUI
+      - package: NestChord
+        product: SequencerCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.nestchord.NestChordMacDebug
+        GENERATE_INFOPLIST_FILE: true
+        CODE_SIGN_STYLE: Automatic
+  NestChordApp:
+    type: application
+    platform: iOS
+    sources:
+      - App/NestChordApp
+    dependencies:
+      - package: NestChord
+        product: PluginUI
+      - target: NestChordAUv3Extension
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.nestchord.NestChord
+        INFOPLIST_FILE: App/NestChordApp/Info.plist
+        CODE_SIGN_STYLE: Automatic
+  NestChordAUv3Extension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Extension/NestChordAUv3
+    dependencies:
+      - package: NestChord
+        product: SequencerCore
+      - package: NestChord
+        product: PluginUI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.nestchord.NestChord.AUv3
+        INFOPLIST_FILE: Extension/NestChordAUv3/Info.plist
+        APPLICATION_EXTENSION_API_ONLY: true
+        CODE_SIGN_STYLE: Automatic
+  NestChordCoreTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests/NestChordCoreTests
+    dependencies:
+      - package: NestChord
+        product: CoreMusicTheory
+      - package: NestChord
+        product: VoicingEngine
+      - package: NestChord
+        product: SequencerCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.nestchord.NestChord.CoreTests
+        GENERATE_INFOPLIST_FILE: true
+        CODE_SIGN_STYLE: Automatic
+schemes:
+  NestChordMacDebug:
+    build:
+      targets:
+        NestChordMacDebug: all
+    run:
+      config: Debug
+      executable: NestChordMacDebug
+  NestChord:
+    build:
+      targets:
+        NestChordApp: all
+        NestChordAUv3Extension: all
+        NestChordCoreTests: [test]
+    run:
+      config: Debug
+      executable: NestChordApp
+    test:
+      targets:
+        - NestChordCoreTests

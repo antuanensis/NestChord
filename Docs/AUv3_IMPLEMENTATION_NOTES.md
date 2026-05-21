@@ -16,6 +16,8 @@ Chord Block starts are derived from accumulated duration, so host timing only ne
 
 The current MIDI bridge is deliberately simple and should be validated in Loopy Pro, AUM, Logic Pro for iPad, Cubasis, and Drambo before advanced timing features are layered on top.
 
+The AUv3 debug panel shows a read-only Host Sync strip during host testing. It reports tempo, beat position, meter, transport movement, discontinuity state, frame count, render sample rate, and the number of MIDI events emitted by the latest reported render block.
+
 ## Shared AUv3 State
 
 `NestChordAudioUnit` owns the render pattern in the AUv3 extension. `AudioUnitViewController` connects the SwiftUI `PatternStore` to the created audio unit:
@@ -24,6 +26,9 @@ The current MIDI bridge is deliberately simple and should be validated in Loopy 
 - Host `fullState` restoration replaces the audio unit pattern and pushes the restored pattern back into the visible store.
 - The AU render block reads the current pattern through a locked snapshot boundary at render time.
 - Pattern changes request a note flush on the next render block so deleted or changed active blocks do not leave old notes hanging.
+- The AU attempts to read render sample rate from allocated input/output bus formats, falling back to 44.1 kHz if no bus format is available in the MIDI-only shell.
+- MIDI event sample offsets are clamped into the current render block before being sent to the AU MIDI output block.
+- Even though NestChord is a MIDI processor, the AU exposes a stereo input/output bus pair for stricter hosts that reject zero-bus AUv3 instances. The render block passes through pulled input audio when present and clears output buffers otherwise.
 
 This is an MVP-safe bridge for first host testing. Before release, the render path should be audited further for lock contention and allocation behavior under heavy host load.
 
@@ -43,9 +48,9 @@ These should wait until note output, host sync, and state save/restore pass real
 
 ## First Host Validation Checklist
 
-Use AUM or Loopy Pro first, then repeat in Logic Pro for iPad, Cubasis, and Drambo:
+Use [HOST_VALIDATION.md](HOST_VALIDATION.md) for the detailed procedure. Start with AUM or Loopy Pro, then repeat in Logic Pro for iPad, Cubasis, and Drambo:
 
-- Confirm `NestChord: Harmonic Blocks` appears as an AUv3 MIDI component.
+- Confirm `NestChord` appears as an AUv3 MIDI component.
 - Route NestChord MIDI output into a synth and confirm chords sound.
 - Edit Chord Blocks while the plugin is loaded and confirm playback follows the UI edits.
 - Change a block's MIDI channel and confirm the target synth receives the expected channel.

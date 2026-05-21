@@ -60,7 +60,9 @@ By default it creates a virtual MIDI source named `NestChord Debug Source`. Choo
 
 ## AUv3 Host Testing
 
-The AUv3 extension is ready for first host validation. Install the iOS app on an iPad, then load `NestChord: Harmonic Blocks` as an AUv3 MIDI plugin in a host such as AUM, Loopy Pro, Logic Pro for iPad, Cubasis, or Drambo. Route its MIDI output into an instrument plugin or external synth.
+The AUv3 extension is ready for first host validation. Install the iOS app on an iPad, then load `NestChord` as an AUv3 MIDI plugin in a host such as AUM, Loopy Pro, Logic Pro for iPad, Cubasis, or Drambo. Route its MIDI output into an instrument plugin or external synth.
+
+See [Docs/HOST_VALIDATION.md](Docs/HOST_VALIDATION.md) for the full setup, expected results, and troubleshooting checklist.
 
 First host checks:
 

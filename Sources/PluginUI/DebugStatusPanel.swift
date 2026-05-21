@@ -16,6 +16,8 @@ struct DebugStatusPanel: View {
 
             if showsLocalControls {
                 localControls
+            } else {
+                hostSyncStrip
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -71,11 +73,90 @@ struct DebugStatusPanel: View {
         }
     }
 
+    private var hostSyncStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                HostDiagnosticCell(
+                    title: "State",
+                    value: hostDiagnostics.map { $0.isPlaying ? "Playing" : "Stopped" } ?? "Waiting",
+                    isActive: hostDiagnostics?.isPlaying == true
+                )
+                HostDiagnosticCell(
+                    title: "Tempo",
+                    value: hostDiagnostics.map { "\(Int($0.tempo.rounded()))" } ?? "--"
+                )
+                HostDiagnosticCell(
+                    title: "Beat",
+                    value: hostDiagnostics.map { nestFormatted($0.beatPosition.beats) } ?? "--"
+                )
+                HostDiagnosticCell(
+                    title: "Meter",
+                    value: hostDiagnostics.map { "\($0.timeSignature.numerator)/\($0.timeSignature.denominator)" } ?? "--"
+                )
+                HostDiagnosticCell(
+                    title: "Frames",
+                    value: hostDiagnostics.map { "\($0.frameCount)" } ?? "--"
+                )
+                HostDiagnosticCell(
+                    title: "Rate",
+                    value: hostDiagnostics.map { "\(Int($0.sampleRate.rounded()))" } ?? "--"
+                )
+                HostDiagnosticCell(
+                    title: "MIDI",
+                    value: hostDiagnostics.map { "\($0.lastMIDIEventCount)" } ?? "--",
+                    isActive: (hostDiagnostics?.lastMIDIEventCount ?? 0) > 0
+                )
+                HostDiagnosticCell(
+                    title: "Jump",
+                    value: hostDiagnostics?.isDiscontinuous == true ? "Yes" : "No",
+                    isActive: hostDiagnostics?.isDiscontinuous == true
+                )
+            }
+        }
+    }
+
+    private var hostDiagnostics: HostDiagnostics? {
+        store.hostDiagnostics
+    }
+
     private var lastEventIsNoteOn: Bool {
         store.debugEvents.last?.kind == .noteOn
     }
 
     private func debugDescription(for event: MIDINoteEvent) -> String {
         "\(event.kind.rawValue)  ch\(event.channel)  note \(event.noteNumber)  vel \(event.velocity)  +\(nestFormatted(event.offset.beats))"
+    }
+}
+
+private struct HostDiagnosticCell: View {
+    var title: String
+    var value: String
+    var isActive = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(isActive ? NestChordTheme.green : Color.white.opacity(0.18))
+                    .frame(width: 6, height: 6)
+                Text(title.uppercased())
+                    .font(.caption2.weight(.bold))
+                    .tracking(0.7)
+                    .foregroundStyle(NestChordTheme.textSecondary)
+            }
+            Text(value)
+                .font(.caption.monospacedDigit().weight(.semibold))
+                .foregroundStyle(NestChordTheme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .frame(minWidth: 64, alignment: .leading)
+        .padding(.horizontal, 9)
+        .frame(height: 46)
+        .background(Color.black.opacity(0.2), in: RoundedRectangle(cornerRadius: NestChordTheme.radius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: NestChordTheme.radius, style: .continuous)
+                .stroke(isActive ? NestChordTheme.green.opacity(0.35) : NestChordTheme.stroke, lineWidth: 1)
+        }
     }
 }

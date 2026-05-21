@@ -36,6 +36,11 @@ public final class AudioUnitViewController: UIViewController, AUAudioUnitFactory
                 self?.store.replacePatternFromExternalState(pattern)
             }
         }
+        audioUnit.diagnosticsDidChange = { [weak self] diagnostics, events in
+            Task { @MainActor in
+                self?.store.replaceHostDiagnostics(diagnostics, recentEvents: events)
+            }
+        }
 
         Task { @MainActor in
             self.connectStoreToAudioUnitIfNeeded()

@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>NestChord AUv3</string>
+	<string>NestChord</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
@@ -34,7 +34,11 @@
 					<key>manufacturer</key>
 					<string>NstC</string>
 					<key>name</key>
-					<string>NestChord: Harmonic Blocks</string>
+					<string>NestChord</string>
+					<key>MIDIOutputNames</key>
+					<array>
+						<string>NestChord</string>
+					</array>
 					<key>subtype</key>
 					<string>NChd</string>
 					<key>tags</key>

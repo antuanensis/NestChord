@@ -23,6 +23,8 @@ In the standalone app and macOS debug app, `PatternStore` owns the editable patt
 
 The AUv3 render block reads the current pattern through a small locked snapshot boundary. UI and host state writes replace the stored pattern outside the musical decision code. This is suitable for the MVP host-validation pass, but the render path still needs a dedicated real-time-safety audit before release.
 
+For host validation, the AUv3 render path also publishes lightweight `HostDiagnostics` snapshots back to the UI. These are read-only observations of host tempo, beat, meter, transport state, frame count, sample rate, discontinuity state, and recent MIDI output count. They are intended for debugging host behavior, not for musical decision-making.
+
 ## MIDI Scope
 
 The MVP outputs MIDI note-on and note-off events only. Each `ChordBlock` has a `midiChannel` value in the user-facing 1...16 range; generated `MIDINoteEvent` values preserve that channel, and the AU MIDI bridge converts it to the zero-based channel bits required by MIDI status bytes.

@@ -203,4 +203,66 @@ struct SequencerCoreTests {
         #expect(events.map(\.kind) == [.noteOff, .noteOff, .noteOff])
         #expect(events.map(\.channel) == [3, 3, 3])
     }
+
+    @Test
+    func testMIDISampleOffsetClamping() {
+        let samplesPerTick = 0.5
+
+        #expect(MIDISampleOffsetMapper.clampedSampleOffset(
+            eventOffset: MusicalTime(ticks: -10),
+            samplesPerTick: samplesPerTick,
+            frameCount: 128
+        ) == 0)
+
+        #expect(MIDISampleOffsetMapper.clampedSampleOffset(
+            eventOffset: MusicalTime(ticks: 20),
+            samplesPerTick: samplesPerTick,
+            frameCount: 128
+        ) == 10)
+
+        #expect(MIDISampleOffsetMapper.clampedSampleOffset(
+            eventOffset: MusicalTime(ticks: 1_000),
+            samplesPerTick: samplesPerTick,
+            frameCount: 128
+        ) == 127)
+    }
+
+    @Test
+    func testBlockDurationUsesSampleRateAndTempo() {
+        let duration = TransportSnapshot.blockDuration(
+            frameCount: 48_000,
+            sampleRate: 48_000,
+            tempo: 120
+        )
+
+        #expect(duration == .beats(2))
+    }
+
+    @Test
+    func testHostDiagnosticsDeriveFromTransportSnapshot() {
+        let transport = TransportSnapshot(
+            hostBeatPosition: .beats(9),
+            tempo: 132,
+            isPlaying: true,
+            timeSignature: TimeSignature(numerator: 7, denominator: 8),
+            blockDuration: .beats(numerator: 1, denominator: 2),
+            isTransportDiscontinuous: true
+        )
+
+        let diagnostics = HostDiagnostics(
+            transport: transport,
+            frameCount: 256,
+            sampleRate: 48_000,
+            lastMIDIEventCount: 3
+        )
+
+        #expect(diagnostics.tempo == 132)
+        #expect(diagnostics.beatPosition == .beats(9))
+        #expect(diagnostics.timeSignature == TimeSignature(numerator: 7, denominator: 8))
+        #expect(diagnostics.isPlaying)
+        #expect(diagnostics.isDiscontinuous)
+        #expect(diagnostics.frameCount == 256)
+        #expect(diagnostics.sampleRate == 48_000)
+        #expect(diagnostics.lastMIDIEventCount == 3)
+    }
 }

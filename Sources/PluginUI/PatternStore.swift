@@ -17,6 +17,7 @@ public final class PatternStore: ObservableObject {
     @Published public var debugEvents: [MIDINoteEvent]
     @Published public var selectedBlockID: UUID?
     @Published public var tempo: Double
+    @Published public var hostDiagnostics: HostDiagnostics?
 
     public weak var midiOutputSink: MIDIOutputSink?
     public var patternDidChange: ((Pattern) -> Void)?
@@ -217,6 +218,20 @@ public final class PatternStore: ObservableObject {
         selectedBlockID = pattern.blocks.first?.id
         debugEvents.removeAll()
         _ = engine.reset()
+    }
+
+    public func replaceHostDiagnostics(_ diagnostics: HostDiagnostics, recentEvents: [MIDINoteEvent]) {
+        hostDiagnostics = diagnostics
+        currentBeat = diagnostics.beatPosition
+        isPlaying = diagnostics.isPlaying
+        tempo = diagnostics.tempo
+
+        if !recentEvents.isEmpty {
+            debugEvents.append(contentsOf: recentEvents)
+            if debugEvents.count > 96 {
+                debugEvents.removeFirst(debugEvents.count - 96)
+            }
+        }
     }
 
     private func wrapIfNeeded(_ beat: MusicalTime) -> MusicalTime {

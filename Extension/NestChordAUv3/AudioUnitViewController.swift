@@ -11,6 +11,7 @@ public final class AudioUnitViewController: UIViewController, AUAudioUnitFactory
     public override func viewDidLoad() {
         super.viewDidLoad()
 
+        NestChordLog.auv3.info("AudioUnitViewController.viewDidLoad")
         connectStoreToAudioUnitIfNeeded()
         let editor = NestChordEditorView(store: store)
         let host = UIHostingController(rootView: editor)
@@ -28,11 +29,16 @@ public final class AudioUnitViewController: UIViewController, AUAudioUnitFactory
     }
 
     nonisolated public func createAudioUnit(with componentDescription: AudioComponentDescription) throws -> AUAudioUnit {
+        NestChordLog.auv3.info(
+            "createAudioUnit type=\(componentDescription.componentType, privacy: .public) subtype=\(componentDescription.componentSubType, privacy: .public) manufacturer=\(componentDescription.componentManufacturer, privacy: .public)"
+        )
         let audioUnit = try NestChordAudioUnit(componentDescription: componentDescription)
         self.audioUnit = audioUnit
+        NestChordLog.auv3.info("createAudioUnit completed")
 
         audioUnit.patternDidChange = { [weak self] pattern in
             Task { @MainActor in
+                NestChordLog.state.info("Host restored pattern; updating visible store")
                 self?.store.replacePatternFromExternalState(pattern)
             }
         }
@@ -52,8 +58,10 @@ public final class AudioUnitViewController: UIViewController, AUAudioUnitFactory
     private func connectStoreToAudioUnitIfNeeded() {
         guard let audioUnit else { return }
 
+        NestChordLog.auv3.info("Connecting PatternStore to AU instance")
         store.replacePatternFromExternalState(audioUnit.currentPattern())
         store.patternDidChange = { [weak audioUnit] pattern in
+            NestChordLog.state.info("UI pattern edit published to AU instance")
             audioUnit?.setPatternFromUI(pattern)
         }
     }

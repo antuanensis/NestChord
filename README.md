@@ -64,6 +64,12 @@ The AUv3 extension is ready for first host validation. Install the iOS app on an
 
 See [Docs/HOST_VALIDATION.md](Docs/HOST_VALIDATION.md) for the full setup, expected results, and troubleshooting checklist.
 
+To capture AUv3 extension logs while opening the plugin on iPad:
+
+```sh
+/usr/bin/log stream --device --level info --style compact --predicate 'subsystem == "com.nestchord.NestChord"'
+```
+
 First host checks:
 
 - edit Chord Blocks in the plugin UI and confirm playback follows the edits

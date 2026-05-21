@@ -17,6 +17,9 @@ struct DebugStatusPanel: View {
             if showsLocalControls {
                 localControls
             } else {
+                Text("AUv3 trace subsystem: com.nestchord.NestChord")
+                    .font(.caption2.monospaced().weight(.semibold))
+                    .foregroundStyle(NestChordTheme.textSecondary)
                 hostSyncStrip
             }
 

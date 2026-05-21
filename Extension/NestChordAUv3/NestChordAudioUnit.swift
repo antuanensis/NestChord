@@ -15,6 +15,7 @@ public final class NestChordAudioUnit: AUAudioUnit {
     private var shouldFlushOnNextRender = false
     private var diagnosticsFrameAccumulator = 0
     private var renderSampleRate = 44_100.0
+    private var hasLoggedFirstRender = false
     private let inputBus: AUAudioUnitBus
     private let outputBus: AUAudioUnitBus
 
@@ -33,18 +34,22 @@ public final class NestChordAudioUnit: AUAudioUnit {
         componentDescription: AudioComponentDescription,
         options: AudioComponentInstantiationOptions = []
     ) throws {
+        NestChordLog.auv3.info("NestChordAudioUnit.init begin")
         guard let defaultFormat = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 2) else {
+            NestChordLog.auv3.error("Failed to create default AVAudioFormat")
             throw NSError(
                 domain: NSOSStatusErrorDomain,
                 code: -50,
                 userInfo: [NSLocalizedDescriptionKey: "Unable to create default AUv3 bus format."]
             )
         }
+        NestChordLog.auv3.info("Creating AU busses with sampleRate=\(defaultFormat.sampleRate, privacy: .public) channelCount=\(defaultFormat.channelCount, privacy: .public)")
         inputBus = try AUAudioUnitBus(format: defaultFormat)
         outputBus = try AUAudioUnitBus(format: defaultFormat)
         inputBus.name = "Input"
         outputBus.name = "Output"
         try super.init(componentDescription: componentDescription, options: options)
+        NestChordLog.auv3.info("NestChordAudioUnit.init complete")
     }
 
     public override var inputBusses: AUAudioUnitBusArray {
@@ -68,28 +73,52 @@ public final class NestChordAudioUnit: AUAudioUnit {
     }
 
     public override var fullState: [String: Any]? {
-        get { encodedStateDictionary() }
-        set { restoreState(from: newValue) }
+        get {
+            NestChordLog.state.info("fullState get")
+            return encodedStateDictionary()
+        }
+        set {
+            NestChordLog.state.info("fullState set")
+            restoreState(from: newValue)
+        }
     }
 
     public override var fullStateForDocument: [String: Any]? {
-        get { encodedStateDictionary() }
-        set { restoreState(from: newValue) }
+        get {
+            NestChordLog.state.info("fullStateForDocument get")
+            return encodedStateDictionary()
+        }
+        set {
+            NestChordLog.state.info("fullStateForDocument set")
+            restoreState(from: newValue)
+        }
     }
 
     public override func allocateRenderResources() throws {
+        NestChordLog.auv3.info("allocateRenderResources begin")
         try super.allocateRenderResources()
 
         if let sampleRate = firstAvailableRenderSampleRate() {
             renderStateLock.withLock {
                 renderSampleRate = sampleRate
             }
+            NestChordLog.auv3.info("allocateRenderResources sampleRate=\(sampleRate, privacy: .public)")
+        } else {
+            NestChordLog.auv3.warning("allocateRenderResources found no bus sample rate; using fallback \(self.renderSampleRate, privacy: .public)")
         }
+        NestChordLog.auv3.info("allocateRenderResources complete")
     }
 
     public override var internalRenderBlock: AUInternalRenderBlock {
         { [weak self] actionFlags, timestamp, frameCount, outputBusNumber, outputData, realtimeEventListHead, pullInputBlock in
             guard let self else { return noErr }
+
+            if !self.hasLoggedFirstRender {
+                self.hasLoggedFirstRender = true
+                NestChordLog.render.info(
+                    "internalRenderBlock first entry frameCount=\(frameCount, privacy: .public) outputBus=\(outputBusNumber, privacy: .public) hasPullInput=\(pullInputBlock != nil, privacy: .public)"
+                )
+            }
 
             let audioStatus = self.renderAudioPassthrough(
                 actionFlags: actionFlags,
@@ -100,7 +129,10 @@ public final class NestChordAudioUnit: AUAudioUnit {
                 realtimeEventListHead: realtimeEventListHead,
                 pullInputBlock: pullInputBlock
             )
-            guard audioStatus == noErr else { return audioStatus }
+            guard audioStatus == noErr else {
+                NestChordLog.render.error("renderAudioPassthrough failed status=\(audioStatus, privacy: .public)")
+                return audioStatus
+            }
 
             let renderResult = self.renderStateLock.withLock {
                 let currentPattern = self.pattern
@@ -142,6 +174,9 @@ public final class NestChordAudioUnit: AUAudioUnit {
                 samplesPerTick: hostContext.samplesPerTick,
                 frameCount: Int(frameCount)
             )
+            if !events.isEmpty {
+                NestChordLog.midi.info("Emitted MIDI events count=\(events.count, privacy: .public)")
+            }
 
             if shouldReportDiagnostics {
                 self.diagnosticsDidChange?(diagnostics, events)
@@ -212,8 +247,10 @@ public final class NestChordAudioUnit: AUAudioUnit {
     private func restoreState(from dictionary: [String: Any]?) {
         guard let data = dictionary?[Self.patternStateKey] as? Data,
               let envelope = try? PatternStateEnvelope.decodeJSON(data) else {
+            NestChordLog.state.warning("restoreState ignored missing or invalid pattern data")
             return
         }
+        NestChordLog.state.info("restoreState decoded pattern blocks=\(envelope.pattern.blocks.count, privacy: .public)")
         setPatternFromHost(envelope.pattern)
     }
 

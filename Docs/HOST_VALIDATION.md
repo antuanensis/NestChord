@@ -47,6 +47,59 @@ NestChord does not generate audio. If there is no synth or external instrument r
 13. Jump the host transport or restart playback mid-loop.
 14. Save the host session, close it, reopen it, and confirm the progression restores.
 
+## Capturing AUv3 Logs
+
+NestChord writes structured logs from the AUv3 extension with subsystem:
+
+```text
+com.nestchord.NestChord
+```
+
+Categories:
+
+- `AUv3`
+- `Render`
+- `State`
+- `MIDI`
+
+With the iPad connected by USB, stream logs from the first paired device:
+
+```sh
+/usr/bin/log stream \
+  --device \
+  --level info \
+  --style compact \
+  --predicate 'subsystem == "com.nestchord.NestChord"'
+```
+
+If you have multiple devices, list the iPad identifier:
+
+```sh
+xcrun devicectl list devices
+```
+
+Then stream from that specific iPad:
+
+```sh
+/usr/bin/log stream \
+  --device-udid YOUR_DEVICE_ID \
+  --level info \
+  --style compact \
+  --predicate 'subsystem == "com.nestchord.NestChord"'
+```
+
+Expected useful markers:
+
+- `AudioUnitViewController.viewDidLoad`
+- `createAudioUnit`
+- `NestChordAudioUnit.init begin`
+- `NestChordAudioUnit.init complete`
+- `allocateRenderResources begin`
+- `internalRenderBlock first entry`
+- `Emitted MIDI events count=...`
+
+If the plugin fails before these messages appear, the host may be rejecting extension metadata before instantiating the audio unit. If logs reach `allocateRenderResources` and then fail, the problem is likely render-resource or bus-format related.
+
 ## Troubleshooting
 
 ### Plugin Not Visible
